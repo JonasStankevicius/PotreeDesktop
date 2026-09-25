@@ -50,3 +50,19 @@ try {
 }
 
 console.log(`sync-potree: ${source} -> libs/potree`);
+
+// The labelling UI is shared with the browser preview page in the Potree repo and
+// is edited there. index.html loads this copy, so it travels with the build.
+const panelSource = path.join(checkout, 'examples', 'annotation_panel.js');
+const panelTarget = path.join(root, 'src', 'annotation_panel.js');
+
+if (fs.existsSync(panelSource)) {
+	try {
+		fs.copyFileSync(panelSource, panelTarget);
+		console.log('sync-potree: annotation_panel.js -> src/annotation_panel.js');
+	} catch (e) {
+		bail(`could not copy annotation_panel.js: ${e.message}`);
+	}
+} else {
+	bail(`no annotation_panel.js at ${panelSource}`);
+}

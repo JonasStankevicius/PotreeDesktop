@@ -52,3 +52,26 @@ npm run potree:sync -- ../path/to/potree
 
 Anything edited directly inside `libs/potree` is overwritten on the next launch.
 Change the Potree source instead.
+
+# The labelling UI
+
+The "Selected Annotation" panel - assigning a class and a colour to volumes and to
+line measurements - is shared with the Potree repo and lives in exactly one file:
+
+```
+../potree/examples/annotation_panel.js
+```
+
+Edit it there. `PotreeDesktop.bat` re-copies it to `src/annotation_panel.js` on every
+launch, alongside the Potree build, so this app always runs the current version.
+`src/annotation_panel.js` is generated and gitignored - editing it is pointless,
+because the next launch overwrites it.
+
+That same file also backs `../potree/examples/potree_desktop_index.html`, a browser
+preview of this app. With `npm start` running in the Potree checkout it is served at
+http://localhost:1234/examples/potree_desktop_index.html, which is a faster way to
+work on the labelling UI than restarting Electron.
+
+`index.html` here is the real app shell: drag and drop, the converter, and the
+Electron wiring. It is NOT a copy of the preview page and must not be overwritten
+with one - only the shared panel travels between them.

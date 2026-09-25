@@ -2,5 +2,6 @@ node_modules
 package-lock.json
 libs/Cesium
 
-# copied from ../potree/build/potree by tools/sync-potree.js
+# copied from ../potree by tools/sync-potree.js
 libs/potree
+src/annotation_panel.js
