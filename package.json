@@ -4,7 +4,8 @@
 	"description": "A WebGL Point Cloud Viewer",
 	"main": "main.js",
 	"scripts": {
-		"start": "electron ."
+		"start": "npm run potree:sync && electron .",
+		"potree:sync": "node tools/sync-potree.js"
 	},
 	"repository": "https://github.com/potree/potree",
 	"keywords": [

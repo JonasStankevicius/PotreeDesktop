@@ -1,6 +1,9 @@
 
 import * as THREE from "../libs/three.js/build/three.module.js"
 import JSON5 from "../libs/json5-2.1.3/json5.mjs";
+import {Line2} from "../libs/three.js/lines/Line2.js";
+import {LineGeometry} from "../libs/three.js/lines/LineGeometry.js";
+import {LineMaterial} from "../libs/three.js/lines/LineMaterial.js";
 
 export function loadDroppedPointcloud(cloudjsPath){
 	const folderName = cloudjsPath.replace(/\\/g, "/").split("/").reverse()[1];
@@ -26,6 +29,81 @@ export function loadDroppedPointcloud(cloudjsPath){
 		viewer.zoomTo(e.pointcloud);
 	});
 };
+
+export function switchToElevation(gradient) {
+    viewer.scene.pointclouds.forEach(pc => {
+        pc.material.activeAttributeName = "elevation";
+        pc.material.gradient = gradient;
+    });
+}
+
+export function switchToRGB() {
+    viewer.scene.pointclouds.forEach(pc => {
+        let hasRGBA = pc.getAttributes().attributes.find(a => a.name === "rgba") !== undefined
+        if (hasRGBA) {
+            pc.material.activeAttributeName = "rgba";
+        } else {
+            pc.material.activeAttributeName = "color";
+        }
+    });
+}
+
+
+export async function load_lines_data(filePath, resolution, color) {
+
+	const loader = new Potree.ShapefileLoader();
+
+	const features = await loader.loadShapefileFeatures(filePath);
+
+	let lineMaterial = new LineMaterial({
+		color: color, 
+		dashSize: 5, 
+		gapSize: 2,
+		linewidth: 2, 
+		resolution: resolution,
+	});
+
+	for(const feature of features){
+		let coords = feature.geometry.coordinates;
+
+		let min = new THREE.Vector3(Infinity, Infinity, Infinity);
+		for(const point of coords){
+			min.x = Math.min(min.x, point[0]);
+			min.y = Math.min(min.y, point[1]);
+			min.z = Math.min(min.z, point[2]);
+		}
+
+		coords = coords.map(pt => [pt[0] - min.x, pt[1] - min.y, pt[2] - min.z]);
+
+		coords = coords.flat()
+
+		let lineGeometry = new LineGeometry();
+		lineGeometry.setPositions(coords);
+
+		const line = new Line2(lineGeometry, lineMaterial);
+		line.position.copy(min);
+
+		viewer.scene.scene.add(line);
+	}
+}
+
+export async function load_project(filePath) {
+
+	try {
+		
+		filePath = filePath.replace(/\\/g, '\\\\');
+
+		const response = await fetch(filePath);
+		const json = await response.json();
+
+		if (json.type === "Potree") {
+			Potree.loadProject(viewer, json);
+		}
+	} catch (e) {
+		console.error("failed to parse the dropped file as JSON");
+		console.error(e);
+	}
+}
 
 export function createPlaceholder(aabb){
 	console.log("create placeholder");
@@ -439,6 +517,8 @@ export async function dropHandler(event){
 
 	const cloudJsFiles = [];
 	const lasLazFiles = [];
+	const shapeFiles = [];
+	const projectFiles = [];
 
 	let suggestedDirectory = null;
 	let suggestedName = null;
@@ -458,6 +538,8 @@ export async function dropHandler(event){
 		const np = require('path');
 
 		const whitelist = [".las", ".laz"];
+		const shapelist = [".shp"];
+		const projects = [".json5", ".json"];
 
 		let isFile = fs.lstatSync(path).isFile();
 		const isJson5 = file.name.toLowerCase().endsWith(".json5");
@@ -491,6 +573,10 @@ export async function dropHandler(event){
 					suggestedDirectory = np.normalize(`${path}/..`);
 					suggestedName = np.basename(path, np.extname(path)) + "_converted";
 				}
+			}else if(shapelist.includes(extension)){
+				shapeFiles.push(file.path);		
+			} else if (projects.includes(extension)) {
+				projectFiles.push(file.path);
 			}
 		}else if(fs.lstatSync(path).isDirectory()){
 			// handle directory
@@ -529,6 +615,16 @@ export async function dropHandler(event){
 
 	if(lasLazFiles.length > 0){
 		doConversion(lasLazFiles, suggestedDirectory, suggestedName);
+	}
+
+	const resolution = new THREE.Vector2(1000, 1000);
+	const color = 0x00ff00;
+	for(const shapeFile of shapeFiles){
+		await load_lines_data(shapeFile, resolution, color);
+	}
+
+	for (const projectFile of projectFiles) {
+		await load_project(projectFile);
 	}
 
 	for(const cloudjs of cloudJsFiles){

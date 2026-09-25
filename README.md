@@ -21,3 +21,34 @@ In order to reset the viewer, you'll have to click "window->reload".
 * Execute PotreeDesktop.bat
 * Drag and Drop a las or laz file to convert and load it.
 * Drag and Drop a previously converted point cloud to load it. 
+* Drag and Drop a .shp file to load its lines.
+* Drag and Drop a .json / .json5 project to restore its volumes.
+
+# Building Potree
+
+The Potree viewer is developed in a separate checkout next to this one:
+
+```
+C:\src\potree           <- Potree source, where you edit and build
+C:\src\PotreeDesktop    <- this repo
+```
+
+`libs/potree` holds Potree's compiled output and is generated, not tracked in git.
+`PotreeDesktop.bat` re-copies it from `../potree/build/potree` on every launch, so
+whatever you last built in the Potree checkout is what starts up here.
+
+That copy is the *build*, not the source. Keep `npm start` running in `../potree`
+so gulp rebuilds on every edit, then just relaunch this app to pick it up.
+
+If `../potree` is missing or has never been built, the launcher warns and starts
+with the previous copy rather than failing.
+
+To sync by hand, or from a checkout somewhere else:
+
+```bash
+npm run potree:sync
+npm run potree:sync -- ../path/to/potree
+```
+
+Anything edited directly inside `libs/potree` is overwritten on the next launch.
+Change the Potree source instead.
