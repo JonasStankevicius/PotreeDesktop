@@ -32,6 +32,20 @@ function createWindow () {
 	// 	protocol: 'file:',
 	// 	slashes: true
 	// }));
+	{
+		// The File System Access API is how the viewer opens its save dialog and
+		// writes the chosen file. Chromium asks the embedder for permission to
+		// write, and Electron denies it unless the app answers, which left saving a
+		// project creating an empty file and then failing.
+		const session = mainWindow.webContents.session;
+
+		session.setPermissionRequestHandler((webContents, permission, callback) => {
+			callback(true);
+		});
+
+		session.setPermissionCheckHandler(() => true);
+	}
+
 	mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
 

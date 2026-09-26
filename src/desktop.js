@@ -542,9 +542,14 @@ export async function dropHandler(event){
 		const projects = [".json5", ".json"];
 
 		let isFile = fs.lstatSync(path).isFile();
-		const isJson5 = file.name.toLowerCase().endsWith(".json5");
 
-		if(isJson5){
+		// Projects are saved as .json now and as .json5 historically. metadata.json
+		// is a point cloud rather than a project, so it is left to the branches below.
+		const isProject = isFile
+			&& projects.includes(np.extname(path).toLowerCase())
+			&& path.indexOf("metadata.json") < 0;
+
+		if(isProject){
 			try{
 
 				const text = await file.text();
@@ -552,6 +557,9 @@ export async function dropHandler(event){
 
 				if(json.type === "Potree"){
 					Potree.loadProject(viewer, json);
+
+					// where the project came from, so CTRL+S writes straight back to it
+					viewer.projectFile = {path};
 				}
 			}catch(e){
 				console.error("failed to parse the dropped file as JSON");
